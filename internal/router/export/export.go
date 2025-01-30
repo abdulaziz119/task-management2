@@ -2,7 +2,7 @@ package export
 
 import (
 	"github.com/gin-gonic/gin"
-	"task-management/internal/controller/http/v1/export"
+	"task-management2/internal/controller/http/v1/export"
 )
 
 func Router(g *gin.RouterGroup, exportController *export.Controller) {

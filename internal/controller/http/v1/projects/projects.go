@@ -17,7 +17,7 @@ func NewController(useCase Repository) *Controller {
 	return &Controller{useCase: useCase}
 }
 
-func (cl Controller) ProjectGetList(c *gin.Context) {
+func (cl Controller) GetProjectsWithStats(c *gin.Context) {
 	var filter projects.Filter
 	query := c.Request.URL.Query()
 
@@ -65,13 +65,21 @@ func (cl Controller) ProjectGetList(c *gin.Context) {
 
 	ctx := context.Background()
 
-	list, count, err := cl.useCase.ProjectGetList(ctx, filter)
+	list, err := cl.useCase.GetProjectsWithStats(ctx, filter)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
 			"status":  false,
 		})
+		return
+	}
 
+	count, err := cl.useCase.GetProjectsCount(ctx, filter)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": err.Error(),
+			"status":  false,
+		})
 		return
 	}
 

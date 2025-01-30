@@ -9,7 +9,7 @@ func Router(g *gin.RouterGroup, projectsController *projects.Controller) {
 	userG := g.Group("/projects")
 	{
 		// get-list
-		userG.GET("/list", projectsController.ProjectGetList)
+		userG.GET("/list", projectsController.GetProjectsWithStats)
 		// get-detail
 		userG.GET("/:id", projectsController.ProjectGetDetail)
 		// create

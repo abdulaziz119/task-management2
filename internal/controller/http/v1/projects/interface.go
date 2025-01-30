@@ -8,7 +8,7 @@ import (
 )
 
 type Repository interface {
-	GetProjectsWithStats(ctx context.Context, filter projects.Filter) ([]List, error)
+	GetProjectsWithStats(ctx context.Context, filter projects.Filter) ([]projects.List, error)
 	GetProjectsCount(ctx context.Context, filter projects.Filter) (int, error)
 	GetById(ctx context.Context, id int) (projects.Detail, error)
 	Create(ctx context.Context, data projects.Create) (entity.Projects, error)

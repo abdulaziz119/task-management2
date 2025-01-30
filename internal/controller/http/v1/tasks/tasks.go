@@ -65,7 +65,16 @@ func (cl *Controller) GetList(c *gin.Context) {
 		filter.Offset = &offset
 	}
 
-	list, taskStats, count, err := cl.useCase.GetAll(c.Request.Context(), filter)
+	list, count, err := cl.useCase.GetAll(c.Request.Context(), filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"status":  false,
+		})
+		return
+	}
+
+	taskStats, err := cl.useCase.GetTaskStats(c.Request.Context(), filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

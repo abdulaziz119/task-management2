@@ -75,13 +75,16 @@ func (cl Controller) Create(c *gin.Context) {
 		return
 	}
 
-	err := cl.useCase.Create(c.Request.Context(), data)
+	user, err := cl.useCase.Create(c.Request.Context(), data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "success"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "success",
+		"data":    user,
+	})
 }
 
 func (cl Controller) Update(c *gin.Context) {
@@ -91,13 +94,16 @@ func (cl Controller) Update(c *gin.Context) {
 		return
 	}
 
-	err := cl.useCase.Update(c.Request.Context(), data)
+	user, err := cl.useCase.Update(c.Request.Context(), data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "success"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "success",
+		"data":    user,
+	})
 }
 
 func (cl Controller) Delete(c *gin.Context) {

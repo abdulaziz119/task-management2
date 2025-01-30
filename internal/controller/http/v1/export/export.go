@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"task-management2/internal/controller/http/v1/projects"
+	"task-management2/internal/controller/http/v1/tasks"
+	"task-management2/internal/controller/http/v1/users"
 	projects2 "task-management2/internal/repository/postgres/projects"
 	tasks2 "task-management2/internal/repository/postgres/tasks"
 	users2 "task-management2/internal/repository/postgres/users"
@@ -14,12 +17,12 @@ import (
 )
 
 type Controller struct {
-	userUseCase    users2.Repository
-	taskUseCase    tasks2.Repository
-	projectUseCase projects2.Repository
+	userUseCase    users.Repository
+	taskUseCase    tasks.Repository
+	projectUseCase projects.Repository
 }
 
-func NewController(userUseCase users2.Repository, taskUseCase tasks2.Repository, projectUseCase projects2.Repository) *Controller {
+func NewController(userUseCase users.Repository, taskUseCase tasks.Repository, projectUseCase projects.Repository) *Controller {
 	return &Controller{
 		userUseCase:    userUseCase,
 		taskUseCase:    taskUseCase,
@@ -30,7 +33,7 @@ func NewController(userUseCase users2.Repository, taskUseCase tasks2.Repository,
 func (h *Controller) ExportToExcel(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userList, _, err := h.userUseCase.GetAll(ctx, users.Filter{})
+	userList, _, err := h.userUseCase.GetAll(ctx, users2.Filter{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Error getting users: %v", err),
@@ -49,7 +52,7 @@ func (h *Controller) ExportToExcel(c *gin.Context) {
 		}
 	}
 
-	projectList, _, err := h.projectUseCase.ProjectGetList(ctx, projects.Filter{})
+	projectList, err := h.projectUseCase.GetProjectsWithStats(ctx, projects2.Filter{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Error getting projects: %v", err),
@@ -93,7 +96,7 @@ func (h *Controller) ExportToExcel(c *gin.Context) {
 		f.SetCellValue(userSheet, fmt.Sprintf("H%d", row), total)
 	}
 
-	tasksList, _, _, err := h.taskUseCase.TaskGetList(ctx, tasks.Filter{})
+	taskList, _, err := h.taskUseCase.GetAll(ctx, tasks2.Filter{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Error getting tasks: %v", err),
@@ -122,40 +125,56 @@ func (h *Controller) ExportToExcel(c *gin.Context) {
 		Fill: excelize.Fill{Type: "pattern", Color: []string{"#C6EFCE"}, Pattern: 1},
 	})
 
-	for i, task := range tasksList {
+	for i, task := range taskList {
 		row := i + 2
 		f.SetCellValue(taskSheet, fmt.Sprintf("A%d", row), task.Id)
 		f.SetCellValue(taskSheet, fmt.Sprintf("B%d", row), task.Name)
 		f.SetCellValue(taskSheet, fmt.Sprintf("C%d", row), task.Description)
 
-		if projectName, ok := projectMap[task.ProjectId]; ok {
+		if task.ProjectId != nil {
+			projectName := projectMap[*task.ProjectId]
 			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), projectName)
 		} else {
 			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), task.ProjectId)
 		}
 
-		f.SetCellValue(taskSheet, fmt.Sprintf("E%d", row), task.Status)
+		var status *string
+		switch {
+		case task.Status != nil && *task.Status == "pending":
+			s := "Pending"
+			status = &s
+		case task.Status != nil && *task.Status == "in_progress":
+			s := "In Progress"
+			status = &s
+		case task.Status != nil && *task.Status == "completed":
+			s := "Completed"
+			status = &s
+		default:
+			s := "Unknown"
+			status = &s
+		}
+		f.SetCellValue(taskSheet, fmt.Sprintf("E%d", row), *status)
 		f.SetCellValue(taskSheet, fmt.Sprintf("F%d", row), task.Priority)
 		f.SetCellValue(taskSheet, fmt.Sprintf("G%d", row), task.DueDate)
 
-		assignedTo := int64(task.AssignedTo)
-		if assignedTo > 0 {
-			if userName, exists := userMap[assignedTo]; exists && userName != "" {
-				f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), userName)
-			} else {
-				f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), "Not assigned")
-			}
+		var assignedToId int64
+		if task.AssignedTo != nil {
+			assignedToId = int64(*task.AssignedTo)
+		}
+		assignedTo := userMap[assignedToId]
+		if assignedTo != "" {
+			f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), assignedTo)
 		} else {
 			f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), "Not assigned")
 		}
 
 		statusCell := fmt.Sprintf("E%d", row)
-		switch task.Status {
-		case "pending":
+		switch {
+		case task.Status != nil && *task.Status == "pending":
 			f.SetCellStyle(taskSheet, statusCell, statusCell, redStyle)
-		case "in_progress":
+		case task.Status != nil && *task.Status == "in_progress":
 			f.SetCellStyle(taskSheet, statusCell, statusCell, yellowStyle)
-		case "completed":
+		case task.Status != nil && *task.Status == "completed":
 			f.SetCellStyle(taskSheet, statusCell, statusCell, greenStyle)
 		}
 	}
@@ -201,7 +220,7 @@ func (h *Controller) ExportProject(c *gin.Context) {
 		return
 	}
 
-	project, err := h.projectUseCase.ProjectGetDetail(c.Request.Context(), id)
+	project, err := h.projectUseCase.GetById(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
