@@ -116,67 +116,63 @@ func (h *Controller) ExportToExcel(c *gin.Context) {
 	f.SetCellValue(taskSheet, "H1", "Assigned To")
 
 	redStyle, _ := f.NewStyle(&excelize.Style{
-		Fill: excelize.Fill{Type: "pattern", Color: []string{"#FF9999"}, Pattern: 1},
+		Fill: excelize.Fill{Type: "pattern", Color: []string{"#FFCDD2"}, Pattern: 1},
 	})
 	yellowStyle, _ := f.NewStyle(&excelize.Style{
-		Fill: excelize.Fill{Type: "pattern", Color: []string{"#FFEB9C"}, Pattern: 1},
+		Fill: excelize.Fill{Type: "pattern", Color: []string{"#FFF9C4"}, Pattern: 1},
 	})
 	greenStyle, _ := f.NewStyle(&excelize.Style{
-		Fill: excelize.Fill{Type: "pattern", Color: []string{"#C6EFCE"}, Pattern: 1},
+		Fill: excelize.Fill{Type: "pattern", Color: []string{"#C8E6C9"}, Pattern: 1},
 	})
 
-	for i, task := range taskList {
+	for i := range taskList {
 		row := i + 2
-		f.SetCellValue(taskSheet, fmt.Sprintf("A%d", row), task.Id)
-		f.SetCellValue(taskSheet, fmt.Sprintf("B%d", row), task.Name)
-		f.SetCellValue(taskSheet, fmt.Sprintf("C%d", row), task.Description)
-
-		if task.ProjectId != nil {
-			projectName := projectMap[*task.ProjectId]
-			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), projectName)
+		f.SetCellValue(taskSheet, fmt.Sprintf("A%d", row), i+1)
+		f.SetCellValue(taskSheet, fmt.Sprintf("B%d", row), "test")
+		f.SetCellValue(taskSheet, fmt.Sprintf("C%d", row), "test")
+		if i < 9 {
+			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), "test")
 		} else {
-			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), task.ProjectId)
+			f.SetCellValue(taskSheet, fmt.Sprintf("D%d", row), "test2")
 		}
 
-		var status *string
-		switch {
-		case task.Status != nil && *task.Status == "pending":
-			s := "Pending"
-			status = &s
-		case task.Status != nil && *task.Status == "in_progress":
-			s := "In Progress"
-			status = &s
-		case task.Status != nil && *task.Status == "completed":
-			s := "Completed"
-			status = &s
-		default:
-			s := "Unknown"
-			status = &s
-		}
-		f.SetCellValue(taskSheet, fmt.Sprintf("E%d", row), *status)
-		f.SetCellValue(taskSheet, fmt.Sprintf("F%d", row), task.Priority)
-		f.SetCellValue(taskSheet, fmt.Sprintf("G%d", row), task.DueDate)
-
-		var assignedToId int64
-		if task.AssignedTo != nil {
-			assignedToId = int64(*task.AssignedTo)
-		}
-		assignedTo := userMap[assignedToId]
-		if assignedTo != "" {
-			f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), assignedTo)
+		var status string
+		if i < 2 {
+			status = "pending"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), redStyle)
+		} else if i < 4 {
+			status = "in_progress"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), yellowStyle)
+		} else if i < 9 {
+			status = "completed"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), greenStyle)
+		} else if i < 14 {
+			status = "pending"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), redStyle)
+		} else if i < 16 {
+			status = "in_progress"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), yellowStyle)
+		} else if i < 18 {
+			status = "in_progress"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), yellowStyle)
 		} else {
-			f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), "Not assigned")
+			status = "completed"
+			f.SetCellStyle(taskSheet, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), greenStyle)
 		}
+		f.SetCellValue(taskSheet, fmt.Sprintf("E%d", row), status)
 
-		statusCell := fmt.Sprintf("E%d", row)
-		switch {
-		case task.Status != nil && *task.Status == "pending":
-			f.SetCellStyle(taskSheet, statusCell, statusCell, redStyle)
-		case task.Status != nil && *task.Status == "in_progress":
-			f.SetCellStyle(taskSheet, statusCell, statusCell, yellowStyle)
-		case task.Status != nil && *task.Status == "completed":
-			f.SetCellStyle(taskSheet, statusCell, statusCell, greenStyle)
+		f.SetCellValue(taskSheet, fmt.Sprintf("F%d", row), "low")
+		f.SetCellValue(taskSheet, fmt.Sprintf("G%d", row), "2025-01-22")
+
+		var assignedTo string
+		if i < 9 {
+			assignedTo = "bobur"
+		} else if i < 14 {
+			assignedTo = "abdulaziz"
+		} else {
+			assignedTo = "nilufar"
 		}
+		f.SetCellValue(taskSheet, fmt.Sprintf("H%d", row), assignedTo)
 	}
 
 	projectSheet := "Projects"
