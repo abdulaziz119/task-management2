@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-	"task-management/internal/pkg/config"
+	"task-management2/internal/pkg/config"
 )
 
 func NewPostgres() *bun.DB {

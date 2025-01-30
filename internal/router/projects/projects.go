@@ -2,7 +2,7 @@ package projects
 
 import (
 	"github.com/gin-gonic/gin"
-	"task-management/internal/controller/http/v1/projects"
+	"task-management2/internal/controller/http/v1/projects"
 )
 
 func Router(g *gin.RouterGroup, projectsController *projects.Controller) {

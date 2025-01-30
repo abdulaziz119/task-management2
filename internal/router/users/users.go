@@ -2,7 +2,7 @@ package users
 
 import (
 	"github.com/gin-gonic/gin"
-	"task-management/internal/controller/http/v1/users"
+	"task-management2/internal/controller/http/v1/users"
 )
 
 func Router(g *gin.RouterGroup, userController *users.Controller) {

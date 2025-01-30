@@ -4,25 +4,22 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	projects2 "task-management2/internal/repository/postgres/projects"
+	tasks2 "task-management2/internal/repository/postgres/tasks"
+	users2 "task-management2/internal/repository/postgres/users"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
-	"task-management/internal/service/projects"
-	"task-management/internal/service/tasks"
-	"task-management/internal/service/users"
-	usecase_projects "task-management/internal/usecase/projects"
-	usecase_tasks "task-management/internal/usecase/tasks"
-	usecase_users "task-management/internal/usecase/users"
 )
 
 type Controller struct {
-	userUseCase    *usecase_users.UseCase
-	taskUseCase    *usecase_tasks.TasksUseCase
-	projectUseCase *usecase_projects.UseCase
+	userUseCase    users2.Repository
+	taskUseCase    tasks2.Repository
+	projectUseCase projects2.Repository
 }
 
-func NewController(userUseCase *usecase_users.UseCase, taskUseCase *usecase_tasks.TasksUseCase, projectUseCase *usecase_projects.UseCase) *Controller {
+func NewController(userUseCase users2.Repository, taskUseCase tasks2.Repository, projectUseCase projects2.Repository) *Controller {
 	return &Controller{
 		userUseCase:    userUseCase,
 		taskUseCase:    taskUseCase,

@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/uptrace/bun"
-	"task-management/internal/entity"
-	basic_repo "task-management/internal/repository/postgres/_basic_repo"
-	basic_service "task-management/internal/service/_basic_service"
-	"task-management/internal/service/users"
+	"task-management2/internal/entity"
+	basic_repo "task-management2/internal/repository/postgres/_basic_repo"
 )
 
 type Repository struct {
 	*bun.DB
 }
 
-func (r Repository) GetAllUsers(ctx context.Context, filter users.Filter) ([]users.User, int, error) {
+func (r Repository) GetAllUsers(ctx context.Context, filter Filter) ([]User, int, error) {
 	query := `
         SELECT 
             id,
@@ -46,9 +44,9 @@ func (r Repository) GetAllUsers(ctx context.Context, filter users.Filter) ([]use
 	}
 	defer rows.Close()
 
-	var result []users.User
+	var result []User
 	for rows.Next() {
-		var user users.User
+		var user User
 		var id int64
 		var fullName, email, role string
 		err := rows.Scan(
@@ -74,7 +72,7 @@ func (r Repository) GetAllUsers(ctx context.Context, filter users.Filter) ([]use
 	return result, count, nil
 }
 
-func (r Repository) GetTaskStats(ctx context.Context) (map[int64]users.TaskStats, error) {
+func (r Repository) GetTaskStats(ctx context.Context) (map[int64]TaskStats, error) {
 	query := `
         SELECT 
             assigned_to,
@@ -91,7 +89,7 @@ func (r Repository) GetTaskStats(ctx context.Context) (map[int64]users.TaskStats
 	}
 	defer rows.Close()
 
-	stats := make(map[int64]users.TaskStats)
+	stats := make(map[int64]TaskStats)
 	for rows.Next() {
 		var userId int64
 		var pending, inProgress, completed int
@@ -105,7 +103,7 @@ func (r Repository) GetTaskStats(ctx context.Context) (map[int64]users.TaskStats
 			return nil, fmt.Errorf("error scanning task stats row: %v", err)
 		}
 		total := pending + inProgress + completed
-		stats[userId] = users.TaskStats{
+		stats[userId] = TaskStats{
 			PendingTasks:    &pending,
 			InProgressTasks: &inProgress,
 			CompletedTasks:  &completed,
@@ -120,7 +118,7 @@ func (r Repository) GetTaskStats(ctx context.Context) (map[int64]users.TaskStats
 	return stats, nil
 }
 
-func (r Repository) GetAll(ctx context.Context, filter users.Filter) ([]users.List, int, error) {
+func (r Repository) GetAll(ctx context.Context, filter Filter) ([]List, int, error) {
 	usersList, count, err := r.GetAllUsers(ctx, filter)
 	if err != nil {
 		return nil, 0, err
@@ -131,13 +129,13 @@ func (r Repository) GetAll(ctx context.Context, filter users.Filter) ([]users.Li
 		return nil, 0, err
 	}
 
-	var result []users.List
+	var result []List
 	for _, user := range usersList {
 		if user.Id == nil {
 			continue
 		}
 		stats := taskStats[*user.Id]
-		result = append(result, users.List{
+		result = append(result, List{
 			Id:              user.Id,
 			FullName:        user.FullName,
 			Email:           user.Email,
@@ -152,7 +150,7 @@ func (r Repository) GetAll(ctx context.Context, filter users.Filter) ([]users.Li
 	return result, count, nil
 }
 
-func (r Repository) getUserDetails(ctx context.Context, userId int) (users.Detail, error) {
+func (r Repository) getUserDetails(ctx context.Context, userId int) (Detail, error) {
 	query := `
 		SELECT 
 			id,
@@ -163,7 +161,7 @@ func (r Repository) getUserDetails(ctx context.Context, userId int) (users.Detai
 		FROM users
 		WHERE id = ? AND deleted_at IS NULL`
 
-	var result users.Detail
+	var result Detail
 	var id int64
 	var fullName, email, role, createdAt string
 
@@ -175,7 +173,7 @@ func (r Repository) getUserDetails(ctx context.Context, userId int) (users.Detai
 		&createdAt,
 	)
 	if err != nil {
-		return users.Detail{}, fmt.Errorf("error getting user details: %w", err)
+		return Detail{}, fmt.Errorf("error getting user details: %w", err)
 	}
 
 	result.Id = &id
@@ -187,7 +185,7 @@ func (r Repository) getUserDetails(ctx context.Context, userId int) (users.Detai
 	return result, nil
 }
 
-func (r Repository) getTaskStatsCount(ctx context.Context, userId int) (users.TaskStats, error) {
+func (r Repository) getTaskStatsCount(ctx context.Context, userId int) (TaskStats, error) {
 	query := `
         SELECT 
             COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_tasks,
@@ -198,7 +196,7 @@ func (r Repository) getTaskStatsCount(ctx context.Context, userId int) (users.Ta
         WHERE deleted_at IS NULL AND assigned_to = ?
         GROUP BY assigned_to`
 
-	var taskStats users.TaskStats
+	var taskStats TaskStats
 	var pending, inProgress, completed, total int
 
 	err := r.QueryRow(query, userId).Scan(
@@ -208,7 +206,7 @@ func (r Repository) getTaskStatsCount(ctx context.Context, userId int) (users.Ta
 		&total,
 	)
 	if err != nil {
-		return users.TaskStats{}, fmt.Errorf("error getting task stats: %w", err)
+		return TaskStats{}, fmt.Errorf("error getting task stats: %w", err)
 	}
 
 	taskStats.PendingTasks = &pending
@@ -219,7 +217,7 @@ func (r Repository) getTaskStatsCount(ctx context.Context, userId int) (users.Ta
 	return taskStats, nil
 }
 
-func (r Repository) getUserTasks(ctx context.Context, userId int) ([]users.TaskItem, error) {
+func (r Repository) getUserTasks(ctx context.Context, userId int) ([]TaskItem, error) {
 	query := `
         SELECT 
             COALESCE(
@@ -245,7 +243,7 @@ func (r Repository) getUserTasks(ctx context.Context, userId int) ([]users.TaskI
 		return nil, fmt.Errorf("error getting user tasks: %w", err)
 	}
 
-	var tasks []users.TaskItem
+	var tasks []TaskItem
 	if err := json.Unmarshal(tasksJson, &tasks); err != nil {
 		return nil, fmt.Errorf("error parsing tasks json: %w", err)
 	}
@@ -253,20 +251,20 @@ func (r Repository) getUserTasks(ctx context.Context, userId int) ([]users.TaskI
 	return tasks, nil
 }
 
-func (r Repository) GetById(ctx context.Context, userId int) (users.Detail, error) {
+func (r Repository) GetById(ctx context.Context, userId int) (Detail, error) {
 	result, err := r.getUserDetails(ctx, userId)
 	if err != nil {
-		return users.Detail{}, err
+		return Detail{}, err
 	}
 
 	taskStats, err := r.getTaskStatsCount(ctx, userId)
 	if err != nil {
-		return users.Detail{}, err
+		return Detail{}, err
 	}
 
 	tasks, err := r.getUserTasks(ctx, userId)
 	if err != nil {
-		return users.Detail{}, err
+		return Detail{}, err
 	}
 
 	result.PendingTasks = taskStats.PendingTasks
@@ -278,7 +276,7 @@ func (r Repository) GetById(ctx context.Context, userId int) (users.Detail, erro
 	return result, nil
 }
 
-func (r Repository) Create(ctx context.Context, data users.Create) (entity.User, error) {
+func (r Repository) Create(ctx context.Context, data Create) (entity.User, error) {
 	var detail entity.User
 
 	detail.Email = data.Email
@@ -291,7 +289,7 @@ func (r Repository) Create(ctx context.Context, data users.Create) (entity.User,
 	return detail, err
 }
 
-func (r Repository) Update(ctx context.Context, data users.Update) (entity.User, error) {
+func (r Repository) Update(ctx context.Context, data Update) (entity.User, error) {
 	var detail entity.User
 
 	err := r.NewSelect().Model(&detail).Where("id = ?", data.Id).Scan(ctx)
@@ -317,7 +315,7 @@ func (r Repository) Update(ctx context.Context, data users.Update) (entity.User,
 	return detail, err
 }
 
-func (r Repository) Delete(ctx context.Context, data basic_service.Delete) error {
+func (r Repository) Delete(ctx context.Context, data basic_repo.Delete) error {
 	return basic_repo.BasicDelete(ctx, data, &entity.User{}, r.DB)
 }
 

@@ -2,22 +2,22 @@ package tasks
 
 import (
 	"github.com/gin-gonic/gin"
-	"task-management/internal/controller/http/v1/tasks"
+	"task-management2/internal/controller/http/v1/projects"
 )
 
-func Router(g *gin.RouterGroup, tasksController *tasks.Controller) {
+func Router(g *gin.RouterGroup, tasksController *projects.Controller) {
 	userG := g.Group("/task")
 	{
 		// get-list
-		userG.GET("/list", tasksController.GetList)
+		userG.GET("/list", tasksController.ProjectGetList)
 		// get-detail
-		userG.GET("/:id", tasksController.GetDetail)
+		userG.GET("/:id", tasksController.ProjectGetDetail)
 		// create
-		userG.POST("/create", tasksController.Create)
+		userG.POST("/create", tasksController.ProjectCreate)
 		// update
-		userG.PUT("/:id", tasksController.Update)
+		userG.PUT("/:id", tasksController.ProjectUpdate)
 		// delete
-		userG.DELETE("/:id", tasksController.Delete)
+		userG.DELETE("/:id", tasksController.ProjectDelete)
 
 	}
 }

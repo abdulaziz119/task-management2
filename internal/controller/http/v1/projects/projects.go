@@ -5,16 +5,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	basic_controller "task-management/internal/controller/http/v1/_basic_controller"
-	"task-management/internal/service/projects"
-	project_usecase "task-management/internal/usecase/projects"
+	basic_controller "task-management2/internal/controller/http/v1/_basic_controller"
+	"task-management2/internal/repository/postgres/projects"
 )
 
 type Controller struct {
-	useCase *project_usecase.UseCase
+	useCase Repository
 }
 
-func NewController(useCase *project_usecase.UseCase) *Controller {
+func NewController(useCase Repository) *Controller {
 	return &Controller{useCase: useCase}
 }
 
@@ -101,7 +100,7 @@ func (cl Controller) ProjectGetDetail(c *gin.Context) {
 
 	ctx := context.Background()
 
-	detail, err := cl.useCase.ProjectGetDetail(ctx, id)
+	detail, err := cl.useCase.GetById(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
@@ -142,7 +141,7 @@ func (cl Controller) ProjectCreate(c *gin.Context) {
 
 	ctx := context.Background()
 
-	detail, err := cl.useCase.ProjectCreate(ctx, data)
+	detail, err := cl.useCase.Create(ctx, data)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
@@ -189,7 +188,7 @@ func (cl Controller) ProjectUpdate(c *gin.Context) {
 	}
 	ctx := context.Background()
 
-	detail, err := cl.useCase.ProjectUpdate(ctx, data)
+	detail, err := cl.useCase.Update(ctx, data)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
@@ -212,7 +211,7 @@ func (cl Controller) ProjectDelete(c *gin.Context) {
 		return
 	}
 
-	err = cl.useCase.ProjectDelete(ctx, data)
+	err = cl.useCase.Delete(ctx, data)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),

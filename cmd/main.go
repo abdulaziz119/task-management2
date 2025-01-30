@@ -5,26 +5,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	export4 "task-management/internal/controller/http/v1/export"
-	projects4 "task-management/internal/controller/http/v1/projects"
-	tasks4 "task-management/internal/controller/http/v1/tasks"
-	users4 "task-management/internal/controller/http/v1/users"
-	"task-management/internal/pkg/config"
-	"task-management/internal/pkg/repository/postgres"
-	"task-management/internal/repository/postgres/projects"
-	"task-management/internal/repository/postgres/tasks"
-	"task-management/internal/repository/postgres/users"
-	"task-management/internal/router/export"
-	project_router "task-management/internal/router/projects"
-	task_router "task-management/internal/router/tasks"
-	user_router "task-management/internal/router/users"
-	projects2 "task-management/internal/service/projects"
-	tasks2 "task-management/internal/service/tasks"
-	users2 "task-management/internal/service/users"
-	projects3 "task-management/internal/usecase/projects"
-	tasks3 "task-management/internal/usecase/tasks"
-	users3 "task-management/internal/usecase/users"
 	"time"
+
+	export_controller "task-management2/internal/controller/http/v1/export"
+	projects_controller "task-management2/internal/controller/http/v1/projects"
+	tasks_controller "task-management2/internal/controller/http/v1/tasks"
+	users_controller "task-management2/internal/controller/http/v1/users"
+	"task-management2/internal/pkg/config"
+	"task-management2/internal/pkg/repository/postgres"
+	"task-management2/internal/repository/postgres/projects"
+	"task-management2/internal/repository/postgres/tasks"
+	"task-management2/internal/repository/postgres/users"
+	"task-management2/internal/router/export"
+	project_router "task-management2/internal/router/projects"
+	task_router "task-management2/internal/router/tasks"
+	user_router "task-management2/internal/router/users"
 )
 
 func main() {
@@ -45,24 +40,16 @@ func main() {
 
 	postgresDB := postgres.NewPostgres()
 
-	//repository
+	// Repository
 	userRepo := users.NewRepository(postgresDB)
 	taskRepo := tasks.NewRepository(postgresDB)
 	projectRepo := projects.NewRepository(postgresDB)
 
-	////service
-	userService := users2.NewService(userRepo)
-	tasksService := tasks2.NewService(taskRepo)
-	projectsService := projects2.NewService(projectRepo)
-
-	userUseCase := users3.NewUseCase(userService, userRepo)
-	taskUseCaseService := tasks3.NewUseCase(tasksService)
-	projectsUseCaseService := projects3.NewUseCase(projectsService)
-
-	userController := users4.NewController(userUseCase)
-	taskController := tasks4.NewController(taskUseCaseService)
-	projectsController := projects4.NewController(projectsUseCaseService)
-	exportController := export4.NewController(userUseCase, taskUseCaseService, projectsUseCaseService)
+	// Controllers
+	userController := users_controller.NewController(userRepo)
+	taskController := tasks_controller.NewController(taskRepo)
+	projectsController := projects_controller.NewController(projectRepo)
+	exportController := export_controller.NewController(userRepo, taskRepo, projectRepo)
 
 	api := r.Group("api")
 	{
@@ -89,13 +76,12 @@ func main() {
 				},
 			})
 		})
-		// @router
-		{
-			user_router.Router(v1, userController)
-			task_router.Router(v1, taskController)
-			project_router.Router(v1, projectsController)
-			export.Router(v1, exportController)
-		}
+
+		// Routers
+		user_router.Router(v1, userController)
+		task_router.Router(v1, taskController)
+		project_router.Router(v1, projectsController)
+		export.Router(v1, exportController)
 	}
 
 	log.Fatalln(r.Run(":" + config.GetConf().Port))

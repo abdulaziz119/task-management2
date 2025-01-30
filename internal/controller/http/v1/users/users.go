@@ -5,16 +5,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	basic_controller "task-management/internal/controller/http/v1/_basic_controller"
-	"task-management/internal/service/users"
-	user_usecase "task-management/internal/usecase/users"
+	basic_controller "task-management2/internal/controller/http/v1/_basic_controller"
+	"task-management2/internal/repository/postgres/users"
 )
 
 type Controller struct {
-	useCase *user_usecase.UseCase
+	useCase Repository
 }
 
-func NewController(useCase *user_usecase.UseCase) *Controller {
+func NewController(useCase Repository) *Controller {
 	return &Controller{useCase: useCase}
 }
 
@@ -52,7 +51,7 @@ func (cl Controller) GetDetail(c *gin.Context) {
 
 	ctx := context.Background()
 
-	detail, err := cl.useCase.AdminGetUserDetail(ctx, id)
+	detail, err := cl.useCase.GetById(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
@@ -76,7 +75,7 @@ func (cl Controller) Create(c *gin.Context) {
 		return
 	}
 
-	err := cl.useCase.AdminCreateUser(c.Request.Context(), data)
+	err := cl.useCase.Create(c.Request.Context(), data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -92,7 +91,7 @@ func (cl Controller) Update(c *gin.Context) {
 		return
 	}
 
-	err := cl.useCase.AdminUpdateUser(c.Request.Context(), data)
+	err := cl.useCase.Update(c.Request.Context(), data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -107,7 +106,7 @@ func (cl Controller) Delete(c *gin.Context) {
 		return
 	}
 
-	err = cl.useCase.AdminDeleteUser(ctx, data)
+	err = cl.useCase.Delete(ctx, data)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),

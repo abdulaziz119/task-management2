@@ -4,16 +4,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	basic_controller "task-management/internal/controller/http/v1/_basic_controller"
-	"task-management/internal/service/tasks"
-	tasks_usecase "task-management/internal/usecase/tasks"
+	basic_controller "task-management2/internal/controller/http/v1/_basic_controller"
+	"task-management2/internal/repository/postgres/tasks"
 )
 
 type Controller struct {
-	useCase tasks_usecase.UseCase
+	useCase Repository
 }
 
-func NewController(useCase tasks_usecase.UseCase) *Controller {
+func NewController(useCase Repository) *Controller {
 	return &Controller{useCase: useCase}
 }
 
@@ -66,7 +65,7 @@ func (cl *Controller) GetList(c *gin.Context) {
 		filter.Offset = &offset
 	}
 
-	list, taskStats, count, err := cl.useCase.TaskGetList(c.Request.Context(), filter)
+	list, taskStats, count, err := cl.useCase.GetAll(c.Request.Context(), filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -90,7 +89,7 @@ func (cl *Controller) GetDetail(c *gin.Context) {
 		return
 	}
 
-	detail, err := cl.useCase.TaskGetDetail(c.Request.Context(), uri.Id)
+	detail, err := cl.useCase.GetById(c.Request.Context(), uri.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -109,7 +108,7 @@ func (cl *Controller) Create(c *gin.Context) {
 		return
 	}
 
-	detail, err := cl.useCase.TaskCreate(c.Request.Context(), request)
+	detail, err := cl.useCase.Create(c.Request.Context(), request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -136,7 +135,7 @@ func (cl *Controller) Update(c *gin.Context) {
 	id := uri.Id
 	request.Id = &id
 
-	detail, err := cl.useCase.TaskUpdate(c.Request.Context(), request)
+	detail, err := cl.useCase.Update(c.Request.Context(), request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -153,7 +152,7 @@ func (cl *Controller) Delete(c *gin.Context) {
 		return
 	}
 
-	err = cl.useCase.TaskDelete(ctx, data)
+	err = cl.useCase.Delete(ctx, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

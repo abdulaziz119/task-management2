@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"task-management/internal/entity"
-	basic_service "task-management/internal/service/_basic_service"
-	"task-management/internal/service/projects"
+	"task-management2/internal/entity"
+	basic_repo "task-management2/internal/repository/postgres/_basic_repo"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -71,7 +70,7 @@ func (r Repository) buildFinalSelectQuery() string {
 	`
 }
 
-func (r Repository) buildWhereAndParams(filter projects.Filter) (string, []interface{}) {
+func (r Repository) buildWhereAndParams(filter Filter) (string, []interface{}) {
 	var whereClause string
 	var params []interface{}
 
@@ -83,7 +82,7 @@ func (r Repository) buildWhereAndParams(filter projects.Filter) (string, []inter
 	return whereClause, params
 }
 
-func (r Repository) buildLimitOffset(filter projects.Filter, params []interface{}) (string, []interface{}) {
+func (r Repository) buildLimitOffset(filter Filter, params []interface{}) (string, []interface{}) {
 	var limitOffsetClause string
 
 	if filter.Limit != nil {
@@ -99,7 +98,7 @@ func (r Repository) buildLimitOffset(filter projects.Filter, params []interface{
 	return limitOffsetClause, params
 }
 
-func (r Repository) buildProjectsQuery(filter projects.Filter) (string, []interface{}) {
+func (r Repository) buildProjectsQuery(filter Filter) (string, []interface{}) {
 	whereClause, params := r.buildWhereAndParams(filter)
 	limitOffsetClause, params := r.buildLimitOffset(filter, params)
 
@@ -120,8 +119,8 @@ func (r Repository) buildProjectsQuery(filter projects.Filter) (string, []interf
 	return query, params
 }
 
-func (r Repository) GetProjectsWithStats(ctx context.Context, filter projects.Filter) ([]projects.List, error) {
-	var result []projects.List
+func (r Repository) GetProjectsWithStats(ctx context.Context, filter Filter) ([]List, error) {
+	var result []List
 
 	query, params := r.buildProjectsQuery(filter)
 	rows, err := r.DB.QueryContext(ctx, query, params...)
@@ -131,7 +130,7 @@ func (r Repository) GetProjectsWithStats(ctx context.Context, filter projects.Fi
 	defer rows.Close()
 
 	for rows.Next() {
-		var item projects.List
+		var item List
 		var name, description *string
 		var ownerId *int
 		var totalTasks int
@@ -167,7 +166,7 @@ func (r Repository) GetProjectsWithStats(ctx context.Context, filter projects.Fi
 	return result, nil
 }
 
-func (r Repository) GetProjectsCount(ctx context.Context, filter projects.Filter) (int, error) {
+func (r Repository) GetProjectsCount(ctx context.Context, filter Filter) (int, error) {
 	var count int
 
 	query := `
@@ -241,8 +240,8 @@ func (r Repository) buildFindOneQuery() string {
 	)
 }
 
-func (r Repository) scanProjectDetailForFindOne(row *sql.Row) (projects.Detail, error) {
-	var detail projects.Detail
+func (r Repository) scanProjectDetailForFindOne(row *sql.Row) (Detail, error) {
+	var detail Detail
 	var name, description *string
 	var ownerId *int
 	var totalTasks int
@@ -257,7 +256,7 @@ func (r Repository) scanProjectDetailForFindOne(row *sql.Row) (projects.Detail, 
 		&progress,
 	)
 	if err != nil {
-		return projects.Detail{}, err
+		return Detail{}, err
 	}
 
 	if name != nil {
@@ -270,7 +269,7 @@ func (r Repository) scanProjectDetailForFindOne(row *sql.Row) (projects.Detail, 
 		detail.Owner_id = *ownerId
 	}
 
-	detail.TaskStats = projects.TaskStats{
+	detail.TaskStats = TaskStats{
 		TotalTasks: totalTasks,
 		Progress:   progress,
 	}
@@ -278,13 +277,13 @@ func (r Repository) scanProjectDetailForFindOne(row *sql.Row) (projects.Detail, 
 	return detail, nil
 }
 
-func (r Repository) GetById(ctx context.Context, id int) (projects.Detail, error) {
+func (r Repository) GetById(ctx context.Context, id int) (Detail, error) {
 	query := r.buildFindOneQuery()
 	row := r.QueryRowContext(ctx, query, id)
 	return r.scanProjectDetailForFindOne(row)
 }
 
-func (r Repository) Create(ctx context.Context, data projects.Create) (entity.Projects, error) {
+func (r Repository) Create(ctx context.Context, data Create) (entity.Projects, error) {
 	var project entity.Projects
 
 	query := `
@@ -314,7 +313,7 @@ func (r Repository) Create(ctx context.Context, data projects.Create) (entity.Pr
 	return project, nil
 }
 
-func (r Repository) Update(ctx context.Context, data projects.Update) (entity.Projects, error) {
+func (r Repository) Update(ctx context.Context, data Update) (entity.Projects, error) {
 	var project entity.Projects
 
 	query := `
@@ -347,7 +346,7 @@ func (r Repository) Update(ctx context.Context, data projects.Update) (entity.Pr
 	return project, nil
 }
 
-func (r Repository) Delete(ctx context.Context, data basic_service.Delete) error {
+func (r Repository) Delete(ctx context.Context, data basic_repo.Delete) error {
 	query := `
 		UPDATE projects 
 		SET deleted_at = ? 

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"github.com/uptrace/bun"
 	"math"
-	"task-management/internal/entity"
-	basic_repo "task-management/internal/repository/postgres/_basic_repo"
-	basic_service "task-management/internal/service/_basic_service"
-	"task-management/internal/service/tasks"
+	"task-management2/internal/entity"
+	basic_repo "task-management2/internal/repository/postgres/_basic_repo"
 	"time"
 )
 
@@ -20,7 +18,7 @@ func NewRepository(DB *bun.DB) *Repository {
 	return &Repository{DB: DB}
 }
 
-func (r Repository) GetAll(ctx context.Context, filter tasks.Filter) ([]entity.Tasks, int, error) {
+func (r Repository) GetAll(ctx context.Context, filter Filter) ([]entity.Tasks, int, error) {
 	baseQuery := `
 		WITH total_count AS (
 			SELECT COUNT(*) as total
@@ -101,7 +99,7 @@ func (r Repository) GetAll(ctx context.Context, filter tasks.Filter) ([]entity.T
 	return result, totalCount, nil
 }
 
-func (r Repository) GetTaskStats(ctx context.Context, filter tasks.Filter) (tasks.TaskStats, error) {
+func (r Repository) GetTaskStats(ctx context.Context, filter Filter) (TaskStats, error) {
 	query := `
 		SELECT 
 			COUNT(*) as total_tasks,
@@ -116,7 +114,7 @@ func (r Repository) GetTaskStats(ctx context.Context, filter tasks.Filter) (task
 		query += fmt.Sprintf(" AND project_id = %d", *filter.ProjectId)
 	}
 
-	var stats tasks.TaskStats
+	var stats TaskStats
 	var totalTasks, completedTasks, pendingTasks, inProgressTasks int
 
 	err := r.QueryRowContext(ctx, query).Scan(
@@ -126,10 +124,10 @@ func (r Repository) GetTaskStats(ctx context.Context, filter tasks.Filter) (task
 		&inProgressTasks,
 	)
 	if err != nil {
-		return tasks.TaskStats{}, fmt.Errorf("error getting task stats: %v", err)
+		return TaskStats{}, fmt.Errorf("error getting task stats: %v", err)
 	}
 
-	stats = tasks.TaskStats{
+	stats = TaskStats{
 		TotalTasks:      totalTasks,
 		CompletedTasks:  completedTasks,
 		PendingTasks:    pendingTasks,
@@ -161,7 +159,7 @@ func (r Repository) GetById(ctx context.Context, id int) (entity.Tasks, error) {
 	return detail, nil
 }
 
-func (r Repository) Create(ctx context.Context, data tasks.Create) (entity.Tasks, error) {
+func (r Repository) Create(ctx context.Context, data Create) (entity.Tasks, error) {
 	var detail entity.Tasks
 
 	const layout = "2006-01-02"
@@ -186,7 +184,7 @@ func (r Repository) Create(ctx context.Context, data tasks.Create) (entity.Tasks
 	return detail, nil
 }
 
-func (r Repository) Update(ctx context.Context, data tasks.Update) (entity.Tasks, error) {
+func (r Repository) Update(ctx context.Context, data Update) (entity.Tasks, error) {
 	var detail entity.Tasks
 
 	err := r.NewSelect().Model(&detail).Where("id = ?", data.Id).Scan(ctx)
@@ -224,6 +222,6 @@ func (r Repository) Update(ctx context.Context, data tasks.Update) (entity.Tasks
 	return detail, nil
 }
 
-func (r Repository) Delete(ctx context.Context, data basic_service.Delete) error {
+func (r Repository) Delete(ctx context.Context, data basic_repo.Delete) error {
 	return basic_repo.BasicDelete(ctx, data, &entity.Tasks{}, r.DB)
 }
