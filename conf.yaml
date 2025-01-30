@@ -1,0 +1,6 @@
+db_host: "localhost"
+db_port: "5433"
+db_username: "dev_user"
+db_name: "services"
+db_password: "dev_pass"
+port: "3000"
